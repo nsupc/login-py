@@ -1,0 +1,2 @@
+nation_1,password
+nation 2,password

@@ -13,6 +13,6 @@ for x in nations:
     headers = {"User-Agent": user, "X-Password": nat[1]}
 
     ping = requests.get(
-        "https://www.nationstates.net/cgi-bin/api.cgi?nation={}}&q=ping".format(nat[0]), headers=headers)
+        "https://www.nationstates.net/cgi-bin/api.cgi?nation={}&q=ping".format(nat[0]), headers=headers)
     time.sleep(0.6)
     print(ping)

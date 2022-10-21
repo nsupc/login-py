@@ -49,7 +49,7 @@ else:
     for item in nation_list:
         nation, password = item.split(',')
         login_request(nation, password)
-
-if errors:
-    with open("error.txt", "w") as out_file:
-        out_file.write("{0}\n{1}".format(date.today().strftime('%d/%m/%Y'), '\n'.join(errors)))
+finally:
+    if errors:
+        with open("error.txt", "w") as out_file:
+            out_file.write("{0}\n{1}".format(date.today().strftime('%d/%m/%Y'), '\n'.join(errors)))

@@ -8,21 +8,22 @@ from urllib.request import urlopen, Request
 headers = {}
 errors = []
 
-try:
-    with open("config.json", "r") as in_file:
-        headers["User-Agent"] = f"UPC's login script, being used by {json.load(in_file)['main_nation']}"
+def set_headers():
+    try:
+        with open("config.json", "r") as in_file:
+            headers["User-Agent"] = f"UPC's login script, being used by {json.load(in_file)['main_nation']}"
 
-except FileNotFoundError:
-    main_input = str(input("What is your main nation/NS email? "))
+    except FileNotFoundError:
+        main_input = str(input("What is your main nation/NS email? "))
 
-    data = {
-        "main_nation": main_input
-    }
+        data = {
+            "main_nation": main_input
+        }
 
-    with open("config.json", "w") as out_file:
-        json.dump(data, out_file, indent=4)
+        with open("config.json", "w") as out_file:
+            json.dump(data, out_file, indent=4)
 
-    headers["User-Agent"] = f"UPC's login script, being used by {main_input}"
+        headers["User-Agent"] = f"UPC's login script, being used by {main_input}"
 
 def login_request(nation, password):
     try:
@@ -40,16 +41,25 @@ def login_request(nation, password):
     finally:
         time.sleep(0.6)
 
-try:
-    with open("nations.txt", "r") as in_file:
-        nation_list = in_file.read().split("\n")
-except FileNotFoundError:
-    print("Please create a file called nations.txt formatted like this:\nnation1,password\nnation2,password\netc...")
-else:
-    for item in nation_list:
-        nation, password = item.split(',')
-        login_request(nation, password)
-finally:
-    if errors:
-        with open("error.txt", "w") as out_file:
-            out_file.write("{0}\n{1}".format(date.today().strftime('%d/%m/%Y'), '\n'.join(errors)))
+def main():
+    set_headers()
+    try:
+        with open("nations.txt", "r") as in_file:
+            nation_list = in_file.read().split("\n")
+    except FileNotFoundError:
+        print("Please create a file called nations.txt formatted like this:\nnation1,password\nnation2,password\netc...")
+    else:
+        for item in nation_list:
+            try:
+                nation, password = item.split(',')
+            except ValueError:
+                if item:
+                    errors.append(f"Could not log into '{item}' - bad syntax")
+            else: 
+                login_request(nation, password)
+    finally:
+        if errors:
+            with open("error.txt", "w") as out_file:
+                out_file.write("{0}\n{1}".format(date.today().strftime('%d/%m/%Y'), '\n'.join(errors)))
+
+main()

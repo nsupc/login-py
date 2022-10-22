@@ -16,12 +16,16 @@ def set_headers():
     except FileNotFoundError:
         main_input = str(input("What is your main nation/NS email? "))
 
-        data = {
-            "main_nation": main_input
-        }
+        with open("config.json", "w") as out_file:
+            json.dump({"main_nation": main_input}, out_file, indent=4)
+
+        headers["User-Agent"] = f"UPC's login script, being used by {main_input}"
+
+    except KeyError:
+        main_input = str(input("What is your main nation/NS email? "))
 
         with open("config.json", "w") as out_file:
-            json.dump(data, out_file, indent=4)
+            json.dump({"main_nation": main_input}, out_file, indent=4)
 
         headers["User-Agent"] = f"UPC's login script, being used by {main_input}"
 
@@ -41,6 +45,7 @@ def login_request(nation, password):
     finally:
         time.sleep(0.6)
 
+
 def main():
     set_headers()
     try:
@@ -54,7 +59,7 @@ def main():
                 nation, password = item.split(',')
             except ValueError:
                 if item:
-                    errors.append(f"Could not log into '{item}' - bad syntax")
+                    errors.append(f"{item} - bad syntax")
             else: 
                 login_request(nation, password)
     finally:

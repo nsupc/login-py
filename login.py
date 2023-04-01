@@ -1,70 +1,84 @@
-import json
+import argparse
+import os
 import time
 
-from datetime import date
+from typing import List
 from urllib.error import HTTPError
 from urllib.request import urlopen, Request
 
-headers = {}
-errors = []
 
-def set_headers():
+class ArgList:
+    user: str
+    ratelimit: int
+
+
+def parse_args() -> ArgList:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-u", "--user", help="Your main nation or ns email address", required=True)
+    parser.add_argument(
+        "-r", "--ratelimit", type=int, help="Requests per 30 second period (max 45)", default=30)
+
+    args = ArgList()
+
+    parser.parse_args(namespace=args)
+
+    if args.ratelimit > 45 or args.ratelimit < 0:
+        args.ratelimit = 30
+
+    return args
+
+
+def read_nations() -> List[str] | None:
     try:
-        with open("config.json", "r") as in_file:
-            headers["User-Agent"] = f"UPC's login script, being used by {json.load(in_file)['main_nation']}"
-
+        with open(f"{os.path.dirname(os.path.realpath(__file__))}/nations.txt", "r") as in_file:
+            return in_file.readlines()
     except FileNotFoundError:
-        main_input = str(input("What is your main nation/NS email? "))
+        print("nations.txt not found, terminating program")
+        return
 
-        with open("config.json", "w") as out_file:
-            json.dump({"main_nation": main_input}, out_file, indent=4)
 
-        headers["User-Agent"] = f"UPC's login script, being used by {main_input}"
+def login_request(user: str, nation: str, password: str):
+    headers = {
+        "User-Agent": f"UPC's login-py, used by {user}",
+        "X-Password": password
+    }
 
-    except KeyError:
-        main_input = str(input("What is your main nation/NS email? "))
-
-        with open("config.json", "w") as out_file:
-            json.dump({"main_nation": main_input}, out_file, indent=4)
-
-        headers["User-Agent"] = f"UPC's login script, being used by {main_input}"
-
-def login_request(nation, password):
     try:
-        headers["X-Password"] = password
-        request = Request(f"https://www.nationstates.net/cgi-bin/api.cgi?nation={nation.lower().replace(' ', '_')}&q=ping", headers=headers)
+        request = Request(
+            f"https://www.nationstates.net/cgi-bin/api.cgi?nation={nation.lower().replace(' ', '_')}&q=ping", headers=headers)
         urlopen(request)
-        print(f"Successfully logged into {nation}")
     except HTTPError as error:
         if error.status == 403:
-            print(f"Could not log into {nation} - wrong password")
-            errors.append(f"{nation} - bad password")
+            print(f"Could not log into {nation} - incorrect password")
         elif error.status == 404:
             print(f"Could not log into {nation} - nation does not exist")
-            errors.append(f"{nation} - does not exist")
-    finally:
-        time.sleep(0.6)
+        else:
+            print(
+                f"Could not log into {nation} - unspecified error with code {error.status}")
+    else:
+        print(f"Successfully logged into {nation}")
 
 
 def main():
-    set_headers()
-    try:
-        with open("nations.txt", "r") as in_file:
-            nation_list = in_file.read().split("\n")
-    except FileNotFoundError:
-        print("Please create a file called nations.txt formatted like this:\nnation1,password\nnation2,password\netc...")
-    else:
-        for item in nation_list:
-            try:
-                nation, password = item.split(',')
-            except ValueError:
-                if item:
-                    errors.append(f"{item} - bad syntax")
-            else: 
-                login_request(nation, password)
-    finally:
-        if errors:
-            with open("error.txt", "w") as out_file:
-                out_file.write("{0}\n{1}".format(date.today().strftime('%d/%m/%Y'), '\n'.join(errors)))
+    args = parse_args()
 
-main()
+    data = read_nations()
+
+    if not data:
+        return
+
+    for idx, entry in enumerate(data):
+        try:
+            nation, password = entry.strip().split(",")
+        except ValueError:
+            print(
+                f"Incorrect syntax on line {idx + 1} of nations.txt: {entry}")
+        else:
+            login_request(args.user, nation, password)
+
+            time.sleep(30 / args.ratelimit)
+
+
+if __name__ == "__main__":
+    main()

@@ -5,7 +5,7 @@ A very basic login script for maintaining nations on [NationStates](https://www.
 - Keeps nations alive
 - Doesn't get you API banned*
 ## Instructions
-1. Install Python3 on your system
+1. Install Python3 on your system and download the script
 2. Modify the nations.txt file the same folder as the application, and add your nations and their passwords to the file in the following format:
     ```
        Nation 1,Password 1
